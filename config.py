@@ -8,7 +8,7 @@ from pathlib import Path
 
 # Your team's track number: 1, 2, 3, 4, 6, 7, 9 or 10.
 # Until this is set, the tests skip and the data loaders refuse to run.
-TRACK = None
+TRACK = 2
 
 # Every random split, shuffle and model init uses this seed, so that two
 # teammates running the same notebook get the same numbers.
