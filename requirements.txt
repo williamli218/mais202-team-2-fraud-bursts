@@ -1,0 +1,5 @@
+# Colab already has numpy, pandas, scikit-learn, torch and matplotlib.
+# These are the extras the project needs.
+kagglehub>=0.3
+gradio>=4.0
+pytest>=7.0

@@ -1,0 +1,6 @@
+# What GitHub Actions installs to run the tests. No torch: no test needs it,
+# and leaving it out keeps a CI run under a minute.
+numpy
+pandas
+scikit-learn
+pytest>=7.0

@@ -1,0 +1,32 @@
+# Data is downloaded by code, never committed.
+data/*
+!data/README.md
+
+# Tokens and credentials. If one of these ever shows up in `git status`, stop.
+kaggle.json
+.env
+*.token
+
+# Archives and large model files
+*.zip
+*.tar.gz
+*.h5
+*.pkl
+*.pt
+*.pth
+*.ckpt
+checkpoints/
+# Small weights that the demo needs can live in models/; see models/README.md
+!models/*.json
+!models/*.npy
+!models/*.pt
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Gradio
+flagged/
+.gradio/
