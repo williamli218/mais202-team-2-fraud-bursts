@@ -24,9 +24,9 @@ Fraud patterns: fraud peaks late at night. Time of day might be a useful signal.
 ## 4. Features or Representation
 
 Each uses only the current charge and that card’s earlier charges, so nothing comes from the future or from other splits:
-•	Spend in past 24h (median $244 legit vs $2,261 fraud): attacks spike spending.
-•	Hour of day (2 pm vs 10 pm): fraud clusters at night.
-•	Time since previous charge (4.4 h vs 1.4 h): fraud charges come fast.
+-	Spend in past 24h (median $244 legit vs $2,261 fraud): attacks spike spending.
+-	Hour of day (2 pm vs 10 pm): fraud clusters at night.
+-	Time since previous charge (4.4 h vs 1.4 h): fraud charges come fast.
 
 ## 5. Evaluation Metric
 
@@ -34,9 +34,9 @@ Our metric consists of the median number of fraudulent transactions that go thro
 
 ## 6. Cost of Errors
 
-•	Missed fraud costs its amount (median about $391)
-•	A wrongly held card costs $15 (support call and customer friction)
-•	Correct decisions cost $0.
+-	Missed fraud costs its amount (median about $391)
+-	A wrongly held card costs $15 (support call and customer friction)
+-	Correct decisions cost $0.
 
 ## 7. Mentor Feedback
 
