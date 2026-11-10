@@ -30,6 +30,7 @@ Conventions used throughout:
 """
 
 import numpy as np  # noqa: F401  (you'll need it)
+import pandas as pd
 
 _TODO = "TODO D1.5: implement {name} in src/metrics.py. The docstring is the spec; tests/test_metrics.py has the cases."
 
@@ -103,7 +104,31 @@ def median_frauds_before_hold(y_true, scores, card_ids, max_legit_hold_rate=0.01
     hold row (all of them if the card is never held). Return the median of
     those counts over attacked cards. No attacked cards -> float('nan').
     """
-    raise NotImplementedError(_TODO.format(name="median_frauds_before_hold"))
+    y = np.asarray(y_true).astype(int)
+    score = np.asarray(scores, dtype=float)
+    card = np.asarray(card_ids)
+
+    df = pd.DataFrame({"card": card, "y": y, "score": score})
+    per_card = df.groupby("card", sort=False).agg(attacked=("y", "max"), max_score=("score", "max"))
+    attacked = per_card["attacked"] == 1
+    if not attacked.any():
+      return float("nan")
+    
+    legit_max = np.sort(per_card.loc[~attacked, "max_score"].to_numpy())
+    candidates = np.append(np.unique(score), np.inf)
+
+    if len(legit_max) == 0:
+      t = candidates[0]
+    else:
+      n_held = len(legit_max) - np.searchsorted(legit_max, candidates, side="left")
+      rate = n_held / len(legit_max)
+      t = candidates[np.argmax(rate <= max_legit_hold_rate)]
+    
+    held = (df["score"] >= t).groupby(df["card"], sort=False).cummax()
+    slipped = ((df["y"] == 1) & ~held).groupby(df["card"], sort=False).sum()
+    return float(np.median(slipped[attacked[attacked].index].to_numpy()))
+
+
 
 
 # ---------------------------------------------------------------------------
