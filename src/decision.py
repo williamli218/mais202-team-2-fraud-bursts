@@ -35,7 +35,10 @@ TRUTHS = ("legit", "fraud")
 # TODO D1.6: replace every None below with a number or "amount", and justify
 # each one in the report.
 COSTS = {
-    # (truth, decision): cost
+    ("legit", "allow"): 0,
+    ("legit", "hold"): 15,
+    ("fraud", "allow"): "amount",
+    ("fraud", "hold"): 0,
 }
 
 
