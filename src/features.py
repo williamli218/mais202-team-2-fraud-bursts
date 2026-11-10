@@ -34,6 +34,44 @@ def example_amount_is_round(df: pd.DataFrame, amount_col: str = "amt") -> pd.Ser
 # future. If your track works with text (Track 6), write the function that
 # turns a hostname into model input here instead, and explain what it keeps
 # and what it throws away.
+def card_time_order(df):
+  d = pd.DataFrame({"cc_num": df["cc_num"],
+  "time": pd.to_datetime(df["trans_date_trans_time"]),
+  "amount": df["amt"].astype("float64")}, index=df.index)
+
+  return d.sort_values(["cc_num", "time"], kind="stable")
+
+def seconds_since_prev_transaction(df):
+  """
+  Log of seconds since this card's previous transaction.
+  Bursts mean small gaps. First transaction on a card gets 30 days.
+  """
+  d = card_time_order(df)
+  gap = d.groupby("cc_num", observed=True)["time"].diff().dt.total_seconds()
+  gap = gap.fillna(30 * 24 * 3600).clip(lower=0)
+  return np.log1p(gap).astype("float32").reindex(df.index)
+
+def transaction_count_past_24h(df):
+  """
+  Number of transactions on this card in the 24 hours up to and including this one.
+  """
+  d = card_time_order(df)
+  count = d.groupby("cc_num", observed=True).rolling("24h", on="time")["amount"].count()
+  return pd.Series(count.to_numpy(), index=d.index).astype("float32").reindex(df.index)
+
+def spend_past_24h(df):
+  """
+  Total dollars spent on this card in the 24 hours up to and including this one.
+  """
+  d = card_time_order(df)
+  s = d.groupby("cc_num", observed=True).rolling("24h", on="time")["amount"].sum()
+  return pd.Series(s.to_numpy(), index=d.index).astype("float32").reindex(df.index)
+
+def hour_of_day(df: pd.DataFrame) -> pd.Series:
+    """
+    Hour of the transaction, 0-23. Uses only the row itself.
+    """
+    return pd.to_datetime(df["trans_date_trans_time"]).dt.hour.astype("int8")
 
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -45,6 +83,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     out = pd.DataFrame(index=df.index)
     # TODO D1.4: replace the example with your features.
-    if "amt" in df.columns:
-        out["amount_is_round"] = example_amount_is_round(df)
+    out["log_seconds_since_prev"] = seconds_since_prev_transaction(df)
+    out["transaction_count_past_24h"] = transaction_count_past_24h(df)
+    out["spend_past_24h"] = spend_past_24h(df)
+    out["hour_of_day"] = hour_of_day(df)
+    out["amt"] = df["amt"].astype("float32")
     return out
