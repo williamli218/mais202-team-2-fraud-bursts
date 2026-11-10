@@ -13,7 +13,7 @@ Each time a card is charged, our model scores whether the card is under attack u
 
 ## 2. Data and Splitting
 
-We train on Sparkov’s fraudTrain.csv (2019 to Jun 2020) and test on fraudTest.csv, untouched until D3. Validation is everything from Jan 1st, 2020, onward (235 attacked cards), leaving a full year for training. Both checks pass: no leakage from validation, and training ends before validation starts.
+We train on Sparkov’s fraudTrain.csv (January 2019 to December 2019 inclusive) and test on fraudTest.csv, untouched until D3. Validation is everything from Jan 1st, 2020, onward (235 attacked cards), leaving a full year for training. Both checks pass: no leakage from validation, and training ends before validation starts.
 
 ## 3. Exploratory Data Analysis
 
@@ -40,5 +40,9 @@ Our metric consists of the median number of fraudulent transactions that go thro
 
 ## 7. Mentor Feedback
 
-What was raised in the first mentor session and what changed, or why it
-didn't.
+-	Typo relating to data splitting dates
+-	Make sure to keep track of different time zones
+-	Make sure to use a percentage value of legitimate cards that we falsely hold to +-1% (it is set to this percentage by default, but we might need to fine tune this value)
+-	Keep track of computation cost, license cost, storage cost, etc.
+-	Implement some more complex features
+
