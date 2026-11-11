@@ -40,9 +40,9 @@ Our metric consists of the median number of fraudulent transactions that go thro
 
 ## 7. Mentor Feedback
 
--	Typo relating to data splitting dates
--	Make sure to keep track of different time zones
--	Make sure to use a percentage value of legitimate cards that we falsely hold to +-1% (it is set to this percentage by default, but we might need to fine tune this value)
--	Keep track of computation cost, license cost, storage cost, etc.
--	Implement some more complex features
+-	Why was 1% chosen? Is it a business or regulatory requirement, or a judgement call?
+- Does 1% balance the $15 false-alarm cost against the $391 fraud cost? A cost comparison would help show this.
+- In the doc, currently there is overlap between training and validation data and there is data leakage. Please correct the typo.
+- Section 6 of the proposal, "Cost of Errors," only covers the business cost of mistakes. It doesn't cover what it costs to build and run the system.
+- One of the features is the time when the transaction happened. Is location important for this feature to know when is considered as night?
 
