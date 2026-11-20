@@ -25,12 +25,12 @@ def always_legitimate(n_rows: int) -> np.ndarray:
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-
+import config
 
 def train_logistic_regression(X_train, y_train):
   model = make_pipeline(
     StandardScaler(),
-    LogisticRegression(max_iter=1000, class_weight="balanced"),
+    LogisticRegression(max_iter=1000, class_weight="balanced", random_state=config.SEED),
   )
   model.fit(X_train, y_train)
   return model
