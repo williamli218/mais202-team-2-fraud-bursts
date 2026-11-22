@@ -1,1 +1,8 @@
 date,author,model,settings,split,metric,value,notes
+2026-11-22,William Li,all_legitimate,score 0 everywhere,valid,median_frauds_before_hold,9.0,D1.5 baseline
+2026-11-22,William Li,all_legitimate,score 0 everywhere,valid,accuracy,0.9939,
+2026-11-22,William Li,logistic_regression,"improved features, class_weight=balanced",valid,median_frauds_before_hold,9.0,
+2026-11-22,William Li,logistic_regression,+ amount bands,valid,median_frauds_before_hold,9.0,AUC 0.989
+2026-11-22,William Li,logistic_regression,+ amount bands + smoothing k=2,valid,median_frauds_before_hold,5.0,
+2026-11-22,William Li,logistic_regression,+ amount bands + smoothing k=3,valid,median_frauds_before_hold,3.0,
+2026-11-22,William Li,logistic_regression,+ amount bands + smoothing k=5,valid,median_frauds_before_hold,4.0,
