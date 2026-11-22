@@ -45,5 +45,18 @@ def smooth_scores(scores, card_ids, k=3):
     lambda x: x.rolling(k, min_periods=1).mean()
   ).to_numpy()
 
+import json
+
+def load_logistic_regression(path="models/logistic_regression.json"):
+  with open(path) as f:
+    return json.load(f)
+
+def logistic_regression_scores(params, X):
+  """Fraud probability per row from saved logistic regression parameters."""
+  X = X[params["features"]].to_numpy(dtype=float)
+  z = (X - np.array(params["mean"])) / np.array(params["scale"])
+  logit = z @ np.array(params["coef"]) + params["intercept"]
+  return 1 / (1 + np.exp(-logit))
+
 # TODO D2.2: your main model. Put training in a function so a teammate can
 # rerun it from a notebook, and log every run to experiments/log.csv.
