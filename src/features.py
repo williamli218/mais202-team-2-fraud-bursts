@@ -82,14 +82,29 @@ def category_one_hot(df):
     {f"cat_{c}": (cat == c).astype("int8") for c in CATEGORIES}, index=df.index
   )
 
+AMOUNT_BANDS = [0, 50, 200, 500, 1000, 1500, np.inf]
+
+def amount_band(df):
+  """
+  One 0/1 column per amount range. Fraud in this data sits between roughly
+  $200 and $1,500, while the very largest charges are legitimate (travel), a
+  pattern a single linear amount term can't express. Fixed edges, not
+  learned from the data. Uses only the row itself.
+  """
+  band = pd.cut(df["amt"].astype("float64"), AMOUNT_BANDS, right=False, labels=False)
+  return pd.DataFrame(
+    {f"amt_band_{i}": (band == i).astype("int8") for i in range(len(AMOUNT_BANDS) - 1)},
+    index=df.index,
+  )
+
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
   """Assemble the feature table your model trains on."""
   out = pd.DataFrame(index=df.index)
   out["log_seconds_since_prev"] = seconds_since_prev_transaction(df)
   out["transaction_count_past_24h"] = transaction_count_past_24h(df)
   out["log_spend_past_24h"] = np.log1p(spend_past_24h(df))
-  out["log_amt"] = np.log1p(df["amt"].astype("float32"))
   out["amount_vs_recent_mean"] = amount_vs_recent_mean(df)
   out["is_night"] = is_night(df)
   out = out.join(category_one_hot(df))
+  out = out.join(amount_band(df))
   return out
