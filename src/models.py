@@ -6,6 +6,7 @@ page before you train anything real (D1.5).
 """
 
 import numpy as np
+import pandas as pd
 
 
 def always_legitimate(n_rows: int) -> np.ndarray:
@@ -34,6 +35,15 @@ def train_logistic_regression(X_train, y_train):
   )
   model.fit(X_train, y_train)
   return model
+
+def smooth_scores(scores, card_ids, k=3):
+  """Card-level score: mean of the card's last k transaction scores, the
+  current one included. Rows must be in time order within each card. Uses
+  only current and past scores, so it can't see the future."""
+  v = pd.DataFrame({"card": np.asarray(card_ids), "s": np.asarray(scores, dtype=float)})
+  return v.groupby("card", sort=False)["s"].transform(
+    lambda x: x.rolling(k, min_periods=1).mean()
+  ).to_numpy()
 
 # TODO D2.2: your main model. Put training in a function so a teammate can
 # rerun it from a notebook, and log every run to experiments/log.csv.
