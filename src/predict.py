@@ -34,6 +34,12 @@ import config
 from src import data
 from src.decision import DECISIONS
 
+import json
+import torch
+from src.models import FraudLSTM
+
+from src import features
+
 REQUIRED_KEYS = ("score", "decision", "reasons")
 
 # The minimum each dict-shaped input has to carry. The loaders have the full
@@ -104,17 +110,50 @@ def validate_output(track: int, out) -> dict:
 
 
 def load_model():
-    """Load whatever predict() needs: weights from models/, thresholds from
-    models/thresholds.json, any lookup tables. Called once, cached in _MODEL.
+  """Load the trained LSTM, its input settings and the hold threshold from models/."""
+  folder = config.ROOT / "models"
+  with open(folder / "lstm_n10.json") as f:
+    settings = json.load(f)
+  with open(folder / "thresholds.json") as f:
+    thresholds = json.load(f)
 
-    TODO D2.6: implement. Keep it small enough to commit (see models/README.md),
-    or download it from Drive here.
-    """
-    raise NotImplementedError("TODO D2.6: implement load_model() in src/predict.py")
+  lstm = FraudLSTM(len(settings["features"]), settings["hidden_dim"])
+  lstm.load_state_dict(torch.load(folder / "lstm_n10.pt", map_location="cpu"))
+  lstm.eval()
+
+  return {
+    "lstm": lstm,
+    "features": settings["features"],
+    "n": settings["n"],
+    "mean": np.array(settings["mean"], dtype="float32"),
+    "std": np.array(settings["std"], dtype="float32"),
+    "threshold": thresholds["hold"],
+  }
 
 
 _MODEL = None
 
+def _reasons(x, f):
+  """Short, plain-language flags about the newest transaction, most important first.
+  They describe what the window looks like; they are not the LSTM's internals."""
+  reasons = []
+  t = pd.to_datetime(x["trans_date_trans_time"])
+  last_amt = float(x["amt"].iloc[-1])
+  prev = x["amt"].iloc[:-1].astype(float)
+
+  n_24h = int((t >= t.iloc[-1] - pd.Timedelta(hours=24)).sum())
+  if n_24h >= 4:
+    reasons.append(f"{n_24h} charges in the last 24 hours")
+  if len(prev) and last_amt > 3 * prev.mean():
+    reasons.append(f"${last_amt:.0f} is over 3x this card's recent average")
+  if f["log_seconds_since_prev"].iloc[-1] < np.log1p(10 * 60):
+    reasons.append("within 10 minutes of the previous charge")
+  if f["is_night"].iloc[-1] == 1:
+    reasons.append("late-night charge (22:00-04:59)")
+  cat = str(x["category"].iloc[-1])
+  if cat.endswith("_net"):
+    reasons.append(f"online purchase ({cat})")
+  return reasons
 
 def predict(x, model=None) -> dict:
     """Score one input and turn the score into a decision. See the module
@@ -138,4 +177,23 @@ def predict(x, model=None) -> dict:
     # model, turn the score into a decision with your thresholds
     # (src/decision.py), fill in reasons, and return the dict. Run it through
     # validate_output(track, out) before returning.
-    raise NotImplementedError("TODO D2.6: implement predict() in src/predict.py")
+        # same per-transaction columns the LSTM was trained on
+    f = x.join(features.build_features(x))
+    f["log_amt"] = np.log1p(f["amt"].astype("float32"))
+
+    # last n transactions -> scaled -> padded at the start, like make_sequences
+    rows = f[model["features"]].to_numpy(dtype="float32")[-model["n"]:]
+    rows = (rows - model["mean"]) / model["std"]
+    window = np.zeros((model["n"], rows.shape[1]), dtype="float32")
+    window[-len(rows):] = rows
+
+    with torch.no_grad():
+      logit = model["lstm"](torch.from_numpy(window[None]))   # batch of 1
+    score = float(torch.sigmoid(logit).item())
+
+    out = {
+      "score": score,
+      "decision": "hold" if score >= model["threshold"] else "allow",
+      "reasons": _reasons(x, f),
+    }
+    return validate_output(track, out)
