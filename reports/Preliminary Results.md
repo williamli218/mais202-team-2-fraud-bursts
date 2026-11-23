@@ -1,7 +1,7 @@
 # Preliminary Results (Deliverable 2)
 
-Team:  
-Track:  
+Team: 02
+Track: Catching bursts of fraud as they happen
 
 Export to `reports/Preliminary Results.pdf` and push both files. Every
 number here comes from your validation set; the test set is still untouched.
