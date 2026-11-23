@@ -6,3 +6,5 @@ date,author,model,settings,split,metric,value,notes
 2026-11-22,William Li,logistic_regression,+ amount bands + smoothing k=2,valid,median_frauds_before_hold,5.0,
 2026-11-22,William Li,logistic_regression,+ amount bands + smoothing k=3,valid,median_frauds_before_hold,3.0,
 2026-11-22,William Li,logistic_regression,+ amount bands + smoothing k=5,valid,median_frauds_before_hold,4.0,
+2026-11-23,William Li,lstm,"n=10, hidden=32, lr=1e-3, batch 2048, pos_weight, early stop (best epoch 11)",valid,median_frauds_before_hold,2.0,2.9 min on T4
+2026-11-23,William Li,lstm,same + smoothing k=3,valid,median_frauds_before_hold,3.0,
