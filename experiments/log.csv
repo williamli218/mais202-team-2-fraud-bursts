@@ -8,11 +8,11 @@ date,author,model,settings,split,metric,value,notes
 2026-11-22,William Li,logistic_regression,+ amount bands + smoothing k=5,valid,median_frauds_before_hold,4.0,
 2026-11-23,William Li,lstm,"n=10, hidden=32, lr=1e-3, batch 2048, pos_weight, early stop (best epoch 11)",valid,median_frauds_before_hold,2.0,2.9 min on T4
 2026-11-23,William Li,lstm,same + smoothing k=3,valid,median_frauds_before_hold,3.0,
-2026-11-23,William Li,All-legitimate,"validation, 1% legit-card budget",valid,precision_cards,nan,
-2026-11-23,William Li,All-legitimate,"validation, 1% legit-card budget",valid,recall_cards,0.0,
-2026-11-23,William Li,LR,"validation, 1% legit-card budget",valid,precision_cards,0.5,
-2026-11-23,William Li,LR,"validation, 1% legit-card budget",valid,recall_cards,0.017,
-2026-11-23,William Li,LR + smoothing (k=3),"validation, 1% legit-card budget",valid,precision_cards,0.973,
-2026-11-23,William Li,LR + smoothing (k=3),"validation, 1% legit-card budget",valid,recall_cards,0.92,
-2026-11-23,William Li,LSTM (n=10),"validation, 1% legit-card budget",valid,precision_cards,0.974,
-2026-11-23,William Li,LSTM (n=10),"validation, 1% legit-card budget",valid,recall_cards,0.958,
+2026-11-23,William Li,all_legitimate,score 0 everywhere,valid,precision_cards,,"card-level, 1% legit-card budget"
+2026-11-23,William Li,all_legitimate,score 0 everywhere,valid,recall_cards,0.0,"card-level, 1% legit-card budget"
+2026-11-23,William Li,logistic_regression,+ amount bands,valid,precision_cards,0.5,"card-level, 1% legit-card budget"
+2026-11-23,William Li,logistic_regression,+ amount bands,valid,recall_cards,0.017,"card-level, 1% legit-card budget"
+2026-11-23,William Li,logistic_regression,+ amount bands + smoothing k=3,valid,precision_cards,0.973,"card-level, 1% legit-card budget"
+2026-11-23,William Li,logistic_regression,+ amount bands + smoothing k=3,valid,recall_cards,0.92,"card-level, 1% legit-card budget"
+2026-11-23,William Li,lstm,"n=10, hidden=32, lr=1e-3, batch 2048, pos_weight, early stop (best epoch 11)",valid,precision_cards,0.974,"card-level, 1% legit-card budget"
+2026-11-23,William Li,lstm,"n=10, hidden=32, lr=1e-3, batch 2048, pos_weight, early stop (best epoch 11)",valid,recall_cards,0.958,"card-level, 1% legit-card budget"
