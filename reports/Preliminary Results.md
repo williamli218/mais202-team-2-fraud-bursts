@@ -46,4 +46,5 @@ Models in src/models.py, weights in models/, and predict() passes tests/test_pre
 
 ## 8. Mentor Notes
 
-No meeting was held
+1.	How precision and recall were calculated and if they were coming from validation data
+2.	Why 10 transactions were chosen and what changes with 5 or 20?
