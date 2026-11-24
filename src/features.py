@@ -108,3 +108,17 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
   out = out.join(category_one_hot(df))
   out = out.join(amount_band(df))
   return out
+
+LSTM_COLS = ["log_amt", "log_seconds_since_prev", "is_night"] + [f"cat_{c}" for c in CATEGORIES]
+
+def build_lstm_inputs(df: pd.DataFrame) -> pd.DataFrame:
+  """Per-transaction inputs the LSTM reads at each step of its window: raw
+  amount (logged), time since the previous charge, night flag and category.
+  No rolling summaries or amount bands: the LSTM learns those patterns from
+  the sequence itself. Same no-future rules as build_features."""
+  out = pd.DataFrame(index=df.index)
+  out["log_amt"] = np.log1p(df["amt"].astype("float32"))
+  out["log_seconds_since_prev"] = seconds_since_prev_transaction(df)
+  out["is_night"] = is_night(df)
+  out = out.join(category_one_hot(df))
+  return out[LSTM_COLS]

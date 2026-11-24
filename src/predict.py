@@ -177,9 +177,8 @@ def predict(x, model=None) -> dict:
     # model, turn the score into a decision with your thresholds
     # (src/decision.py), fill in reasons, and return the dict. Run it through
     # validate_output(track, out) before returning.
-        # same per-transaction columns the LSTM was trained on
-    f = x.join(features.build_features(x))
-    f["log_amt"] = np.log1p(f["amt"].astype("float32"))
+    # same per-transaction columns the LSTM was trained on
+    f = features.build_lstm_inputs(x)
 
     # last n transactions -> scaled -> padded at the start, like make_sequences
     rows = f[model["features"]].to_numpy(dtype="float32")[-model["n"]:]
