@@ -32,8 +32,7 @@ import pandas as pd
 
 import config
 from src import data
-from src.decision import DECISIONS
-
+from src.decision import DECISIONS, simulate_holds
 import json
 import torch
 from src.models import FraudLSTM
@@ -128,6 +127,7 @@ def load_model():
     "mean": np.array(settings["mean"], dtype="float32"),
     "std": np.array(settings["std"], dtype="float32"),
     "threshold": thresholds["hold"],
+    "hold_hours": thresholds.get("hold_hours", 72),
   }
 
 
@@ -155,6 +155,18 @@ def _reasons(x, f):
     reasons.append(f"online purchase ({cat})")
   return reasons
 
+def _window_scores(f, model):
+  """LSTM score for every transaction in f, each from its own window of the
+  previous n transactions (scaled, padded at the start), like make_sequences."""
+  rows = (f[model["features"]].to_numpy(dtype="float32") - model["mean"]) / model["std"]
+  n, k = model["n"], len(rows)
+  windows = np.zeros((k, n, rows.shape[1]), dtype="float32")
+  for i in range(k):
+    r = rows[max(0, i - n + 1): i + 1]
+    windows[i, -len(r):] = r
+  with torch.no_grad():
+    return torch.sigmoid(model["lstm"](torch.from_numpy(windows))).numpy()
+
 def predict(x, model=None) -> dict:
     """Score one input and turn the score into a decision. See the module
     docstring for the contract.
@@ -179,20 +191,19 @@ def predict(x, model=None) -> dict:
     # validate_output(track, out) before returning.
     # same per-transaction columns the LSTM was trained on
     f = features.build_lstm_inputs(x)
+    scores = _window_scores(f, model)          # one score per transaction, oldest first
+    score = float(scores[-1])                  # the newest transaction's score
 
-    # last n transactions -> scaled -> padded at the start, like make_sequences
-    rows = f[model["features"]].to_numpy(dtype="float32")[-model["n"]:]
-    rows = (rows - model["mean"]) / model["std"]
-    window = np.zeros((model["n"], rows.shape[1]), dtype="float32")
-    window[-len(rows):] = rows
+    # replay the decision layer: a score >= threshold holds the card for hold_hours
+    decisions = simulate_holds(scores, x["cc_num"], x["trans_date_trans_time"],
+                               model["threshold"], model["hold_hours"])
+    decision = str(decisions[-1])
 
-    with torch.no_grad():
-      logit = model["lstm"](torch.from_numpy(window[None]))   # batch of 1
-    score = float(torch.sigmoid(logit).item())
+    reasons = _reasons(x, f)
+    if decision == "hold" and score < model["threshold"]:
+      t = pd.to_datetime(x["trans_date_trans_time"])
+      start = t[scores >= model["threshold"]].iloc[-1]
+      reasons.insert(0, f"card on hold since {start:%Y-%m-%d %H:%M} ({model['hold_hours']}h hold)")
 
-    out = {
-      "score": score,
-      "decision": "hold" if score >= model["threshold"] else "allow",
-      "reasons": _reasons(x, f),
-    }
+    out = {"score": score, "decision": decision, "reasons": reasons}
     return validate_output(track, out)
