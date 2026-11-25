@@ -120,3 +120,26 @@ def choose_thresholds(y_true, scores, amounts=None, card_ids=None,
     with open(path, "w") as f:
       json.dump(out, f, indent=2)
   return out
+
+def simulate_holds(scores, card_ids, times, threshold, hold_hours=72):
+  """Replay the decision layer in time order: a transaction scoring >= threshold
+  holds its card for hold_hours, blocking every charge in that window; after
+  that the card is released and scored again (and re-held if needed).
+  Rows must be in time order within each card. Returns "allow"/"hold" per row."""
+  s = np.asarray(scores, dtype=float)
+  cards = np.asarray(card_ids)
+  t = pd.to_datetime(pd.Series(times)).to_numpy()
+  hold = np.timedelta64(int(hold_hours * 3600), "s")
+  decision = np.empty(len(s), dtype=object)
+  held_until = {}
+  for i in range(len(s)):
+    c = cards[i]
+    until = held_until.get(c)
+    if until is not None and t[i] < until:
+      decision[i] = "hold"                 # still inside a hold window
+    elif s[i] >= threshold:
+      decision[i] = "hold"                 # new hold starts here
+      held_until[c] = t[i] + hold
+    else:
+      decision[i] = "allow"
+  return decision
