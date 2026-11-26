@@ -111,16 +111,18 @@ def cost_curve(y_true, scores, amounts, card_ids):
 
 
 def choose_thresholds(y_true, scores, amounts=None, card_ids=None,
-                      max_legit_hold_rate=0.01, path=None):
+                      max_legit_hold_rate=0.01, hold_hours=72, path=None):
   """
   D3.1: the cheapest hold threshold on validation that holds at most
   max_legit_hold_rate of legitimate cards (the track's target).
-  Returns {"hold": t}; saves it to `path` (models/thresholds.json) if given.
+  Costs are computed with cost_curve (card held until the end of the data);
+  the 72h hold period is checked separately with simulate_holds/evaluate.
+  Returns {"hold": t, "hold_hours": hold_hours}; saves it to `path` if given.
   """
   curve = cost_curve(y_true, scores, amounts, card_ids)
   allowed = curve[curve["legit_hold_rate"] <= max_legit_hold_rate]
   best = allowed.loc[allowed["total_cost"].idxmin()]
-  out = {"hold": float(best["threshold"])}
+  out = {"hold": float(best["threshold"]), "hold_hours": hold_hours}
   if path:
     with open(path, "w") as f:
       json.dump(out, f, indent=2)
@@ -150,3 +152,26 @@ def simulate_holds(scores, card_ids, times, threshold, hold_hours=72):
     else:
       decision[i] = "allow"
   return decision
+
+def evaluate(scores, card_ids, labels, amounts, times, threshold, hold_hours=72):
+  """
+  Replay a fixed threshold + hold period and report the numbers for the
+  D3 comparison table: median frauds before hold, honest cards held, fraud
+  charges through and total cost under COSTS. Rows in time order within each card.
+  """
+  dec = simulate_holds(scores, card_ids, times, threshold, hold_hours)
+  y = np.asarray(labels).astype(int)
+  amt = np.asarray(amounts, dtype=float)
+  slipped = (y == 1) & (dec == "allow")
+  g = pd.DataFrame({"card": np.asarray(card_ids), "y": y,
+                    "slip": slipped, "held": dec == "hold"}).groupby("card", sort=False)
+  attacked = g["y"].max() == 1
+  legit_held = int((~attacked & g["held"].max()).sum())
+  missed_cost = _cost_value(COSTS[("fraud", "allow")], amt[slipped]).sum()
+  return {
+    "median frauds before hold": float(g["slip"].sum()[attacked].median()),
+    "honest cards held": legit_held,
+    "honest hold rate": round(legit_held / max(int((~attacked).sum()), 1), 4),
+    "fraud charges through": int(slipped.sum()),
+    "total cost $": round(float(COSTS[("legit", "hold")]) * legit_held + missed_cost),
+  }
