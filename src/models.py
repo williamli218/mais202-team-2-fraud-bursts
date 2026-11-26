@@ -8,6 +8,12 @@ page before you train anything real (D1.5).
 import numpy as np
 import pandas as pd
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+import config
+import json
+
 
 def always_legitimate(n_rows: int) -> np.ndarray:
     """Scores for the trivial baseline: 0.0 for every row.
@@ -20,14 +26,6 @@ def always_legitimate(n_rows: int) -> np.ndarray:
     return np.zeros(n_rows, dtype="float32")
 
 
-# TODO D2.1: a simple baseline model (logistic regression, a small tree, or
-# a rule), trained on your training split, scored on validation. Save it
-# small enough to commit under models/ if the demo will use it.
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-import config
-
 def train_logistic_regression(X_train, y_train):
   model = make_pipeline(
     StandardScaler(),
@@ -36,28 +34,33 @@ def train_logistic_regression(X_train, y_train):
   model.fit(X_train, y_train)
   return model
 
-def smooth_scores(scores, card_ids, k=3):
-  """Card-level score: mean of the card's last k transaction scores, the
-  current one included. Rows must be in time order within each card. Uses
-  only current and past scores, so it can't see the future."""
-  v = pd.DataFrame({"card": np.asarray(card_ids), "s": np.asarray(scores, dtype=float)})
-  return v.groupby("card", sort=False)["s"].transform(
-    lambda x: x.rolling(k, min_periods=1).mean()
-  ).to_numpy()
-
-import json
 
 def load_logistic_regression(path="models/logistic_regression.json"):
   with open(path) as f:
     return json.load(f)
 
+
 def logistic_regression_scores(params, X):
-  """Fraud probability per row from saved logistic regression parameters."""
+  """
+  Fraud probability per row from saved logistic regression parameters.
+  """
   X = X[params["features"]].to_numpy(dtype=float)
   z = (X - np.array(params["mean"])) / np.array(params["scale"])
   logit = z @ np.array(params["coef"]) + params["intercept"]
   return 1 / (1 + np.exp(-logit))
 
+
+def smooth_scores(scores, card_ids, k=3):
+  """
+  Card-level score: mean of the card's last k transaction scores, the
+  current one included. Rows must be in time order within each card. Uses
+  only current and past scores, so it can't see the future.
+  """
+  v = pd.DataFrame({"card": np.asarray(card_ids), "s": np.asarray(scores, dtype=float)})
+  return v.groupby("card", sort=False)["s"].transform(
+    lambda x: x.rolling(k, min_periods=1).mean()
+  ).to_numpy()
+  
 # TODO D2.2: your main model. Put training in a function so a teammate can
 # rerun it from a notebook, and log every run to experiments/log.csv.
 import torch

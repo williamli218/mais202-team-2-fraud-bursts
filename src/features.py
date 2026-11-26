@@ -14,11 +14,14 @@ def example_amount_is_round(df: pd.DataFrame, amount_col: str = "amt") -> pd.Ser
 
 
 def card_time_order(df):
+  """
+  Helper function to sort dataFrame by card number then date of transaction
+  """
   d = pd.DataFrame({"cc_num": df["cc_num"],
   "time": pd.to_datetime(df["trans_date_trans_time"]),
   "amount": df["amt"].astype("float64")}, index=df.index)
-
   return d.sort_values(["cc_num", "time"], kind="stable")
+
 
 def seconds_since_prev_transaction(df):
   """
@@ -30,6 +33,7 @@ def seconds_since_prev_transaction(df):
   gap = gap.fillna(30 * 24 * 3600).clip(lower=0)
   return np.log1p(gap).astype("float32").reindex(df.index)
 
+
 def transaction_count_past_24h(df):
   """
   Number of transactions on this card in the 24 hours up to and including this one.
@@ -37,6 +41,7 @@ def transaction_count_past_24h(df):
   d = card_time_order(df)
   count = d.groupby("cc_num", observed=True).rolling("24h", on="time")["amount"].count()
   return pd.Series(count.to_numpy(), index=d.index).astype("float32").reindex(df.index)
+
 
 def spend_past_24h(df):
   """
@@ -46,12 +51,14 @@ def spend_past_24h(df):
   s = d.groupby("cc_num", observed=True).rolling("24h", on="time")["amount"].sum()
   return pd.Series(s.to_numpy(), index=d.index).astype("float32").reindex(df.index)
 
+
 def is_night(df):
   """
   1 if the charge happens between 22:00 and 04:59, else 0. Uses only the row itself.
   """
   hour = pd.to_datetime(df["trans_date_trans_time"]).dt.hour
   return ((hour >= 22) | (hour <= 4)).astype("int8")
+
 
 def amount_vs_recent_mean(df, n=10):
   """
@@ -64,6 +71,7 @@ def amount_vs_recent_mean(df, n=10):
     lambda s: s.shift(1).rolling(n, min_periods=1).mean()
   )
   return (d["amount"] / prev_mean).fillna(1.0).astype("float32").reindex(df.index)
+
 
 CATEGORIES = [
   "entertainment", "food_dining", "gas_transport", "grocery_net", "grocery_pos",
@@ -82,6 +90,7 @@ def category_one_hot(df):
     {f"cat_{c}": (cat == c).astype("int8") for c in CATEGORIES}, index=df.index
   )
 
+
 AMOUNT_BANDS = [0, 50, 200, 500, 1000, 1500, np.inf]
 
 def amount_band(df):
@@ -97,6 +106,7 @@ def amount_band(df):
     index=df.index,
   )
 
+
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
   """Assemble the feature table your model trains on."""
   out = pd.DataFrame(index=df.index)
@@ -109,13 +119,16 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
   out = out.join(amount_band(df))
   return out
 
+
 LSTM_COLS = ["log_amt", "log_seconds_since_prev", "is_night"] + [f"cat_{c}" for c in CATEGORIES]
 
 def build_lstm_inputs(df: pd.DataFrame) -> pd.DataFrame:
-  """Per-transaction inputs the LSTM reads at each step of its window: raw
+  """
+  Per-transaction inputs the LSTM reads at each step of its window: raw
   amount (logged), time since the previous charge, night flag and category.
   No rolling summaries or amount bands: the LSTM learns those patterns from
-  the sequence itself. Same no-future rules as build_features."""
+  the sequence itself. Same no-future rules as build_features.
+  """
   out = pd.DataFrame(index=df.index)
   out["log_amt"] = np.log1p(df["amt"].astype("float32"))
   out["log_seconds_since_prev"] = seconds_since_prev_transaction(df)

@@ -19,16 +19,13 @@ for, and tests/test_leakage.py runs them on your split once this is written.
 """
 
 import pandas as pd
-
 import config
 from src import data
 
 
 def make_validation_split(pool: pd.DataFrame):
-    """Return (train, valid), both DataFrames, carved from the train pool.
-
-    TODO D1.2: implement, then run `pytest tests/test_leakage.py`. The
-    checks there (and in check_split) are the ones your report describes.
+    """
+    Return (train, valid), both DataFrames, carved from the train pool.
     """
     t = pd.to_datetime(pool["trans_date_trans_time"])
     cut = pd.Timestamp("2020-01-01")
