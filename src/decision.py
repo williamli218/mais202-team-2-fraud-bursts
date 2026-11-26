@@ -66,12 +66,15 @@ def check_costs(track: int | None = None) -> None:
 
 
 def _cost_value(cost, amounts):
-  """A COSTS entry as one number per row: the row's amount, or a fixed number."""
+  """
+  A COSTS entry as one number per row: the row's amount, or a fixed number.
+  """
   return np.asarray(amounts, dtype=float) if cost == "amount" else np.full(len(amounts), float(cost))
 
 
 def cost_curve(y_true, scores, amounts, card_ids):
-  """Total cost on validation at every candidate threshold, for a card-hold system.
+  """
+  Total cost on validation at every candidate threshold, for a card-hold system.
 
   A card is held from its first transaction with score >= t; that transaction
   and everything after it is blocked. Costs from COSTS: each honest card held
@@ -83,7 +86,7 @@ def cost_curve(y_true, scores, amounts, card_ids):
   amt = np.asarray(amounts, dtype=float)
   df = pd.DataFrame({"card": np.asarray(card_ids), "y": y, "s": s})
 
-  run_max = df.groupby("card", sort=False)["s"].cummax().to_numpy()   # highest score so far on the card
+  run_max = df.groupby("card", sort=False)["s"].cummax().to_numpy()
   per_card = df.groupby("card", sort=False).agg(attacked=("y", "max"), max_score=("s", "max"))
   legit_max = np.sort(per_card.loc[per_card["attacked"] == 0, "max_score"].to_numpy())
 
@@ -94,7 +97,7 @@ def cost_curve(y_true, scores, amounts, card_ids):
   missed_cum = np.concatenate([[0.0], np.cumsum(f_cost)])
 
   cand = np.append(np.unique(s), np.inf)
-  n_missed = np.searchsorted(f_run, cand, side="left")      # fraud charges not yet blocked at threshold t
+  n_missed = np.searchsorted(f_run, cand, side="left")
   n_held = len(legit_max) - np.searchsorted(legit_max, cand, side="left")
 
   return pd.DataFrame({
@@ -109,9 +112,11 @@ def cost_curve(y_true, scores, amounts, card_ids):
 
 def choose_thresholds(y_true, scores, amounts=None, card_ids=None,
                       max_legit_hold_rate=0.01, path=None):
-  """D3.1: the cheapest hold threshold on validation that holds at most
+  """
+  D3.1: the cheapest hold threshold on validation that holds at most
   max_legit_hold_rate of legitimate cards (the track's target).
-  Returns {"hold": t}; saves it to `path` (models/thresholds.json) if given."""
+  Returns {"hold": t}; saves it to `path` (models/thresholds.json) if given.
+  """
   curve = cost_curve(y_true, scores, amounts, card_ids)
   allowed = curve[curve["legit_hold_rate"] <= max_legit_hold_rate]
   best = allowed.loc[allowed["total_cost"].idxmin()]
@@ -122,10 +127,12 @@ def choose_thresholds(y_true, scores, amounts=None, card_ids=None,
   return out
 
 def simulate_holds(scores, card_ids, times, threshold, hold_hours=72):
-  """Replay the decision layer in time order: a transaction scoring >= threshold
+  """
+  Replay the decision layer in time order: a transaction scoring >= threshold
   holds its card for hold_hours, blocking every charge in that window; after
   that the card is released and scored again (and re-held if needed).
-  Rows must be in time order within each card. Returns "allow"/"hold" per row."""
+  Rows must be in time order within each card. Returns "allow"/"hold" per row.
+  """
   s = np.asarray(scores, dtype=float)
   cards = np.asarray(card_ids)
   t = pd.to_datetime(pd.Series(times)).to_numpy()
@@ -136,9 +143,9 @@ def simulate_holds(scores, card_ids, times, threshold, hold_hours=72):
     c = cards[i]
     until = held_until.get(c)
     if until is not None and t[i] < until:
-      decision[i] = "hold"                 # still inside a hold window
+      decision[i] = "hold"
     elif s[i] >= threshold:
-      decision[i] = "hold"                 # new hold starts here
+      decision[i] = "hold"
       held_until[c] = t[i] + hold
     else:
       decision[i] = "allow"
