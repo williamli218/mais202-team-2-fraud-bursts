@@ -14,6 +14,11 @@ from sklearn.preprocessing import StandardScaler
 import config
 import json
 
+import torch
+from torch import nn
+import copy
+from torch.utils.data import TensorDataset, DataLoader
+
 
 def always_legitimate(n_rows: int) -> np.ndarray:
     """Scores for the trivial baseline: 0.0 for every row.
@@ -61,34 +66,31 @@ def smooth_scores(scores, card_ids, k=3):
     lambda x: x.rolling(k, min_periods=1).mean()
   ).to_numpy()
   
-# TODO D2.2: your main model. Put training in a function so a teammate can
-# rerun it from a notebook, and log every run to experiments/log.csv.
-import torch
-from torch import nn
 
 
 class FraudLSTM(nn.Module):
-  """Reads a card's last n transactions (oldest first, padding at the start)
-  and returns one logit: how likely the newest transaction is fraud."""
+  """
+  Reads a card's last n transactions (oldest first, padding at the start)
+  and returns one logit: how likely the newest transaction is fraud.
+  """
 
   def __init__(self, n_features, hidden_dim=32, num_layers=1):
     super().__init__()
     self.lstm = nn.LSTM(n_features, hidden_dim, num_layers, batch_first=True)
     self.fc = nn.Linear(hidden_dim, 1)
 
-  def forward(self, x):                        # x: (batch, n, features)
-    lstm_out, _ = self.lstm(x)                 # hidden state starts at 0 for every window
+  def forward(self, x):                              # x: (batch, n, features)
+    lstm_out, _ = self.lstm(x)                       # hidden state starts at 0 for every window
     return self.fc(lstm_out[:, -1, :]).squeeze(-1)   # last step only -> one logit per window
-
-import copy
-from torch.utils.data import TensorDataset, DataLoader
 
 
 def train_lstm(X_tr, y_tr, X_va, y_va, hidden_dim=32, learning_rate=1e-3,
                batch_size=2048, max_epochs=15, patience=3):
-  """Train FraudLSTM with early stopping on validation loss.
+  """
+  Train FraudLSTM with early stopping on validation loss.
   Class imbalance: pos_weight = (#legit / #fraud) in the loss.
-  Returns (model with the best weights, history of losses per epoch)."""
+  Returns (model with the best weights, history of losses per epoch).
+  """
   torch.manual_seed(config.SEED)
   np.random.seed(config.SEED)
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -143,7 +145,9 @@ def train_lstm(X_tr, y_tr, X_va, y_va, hidden_dim=32, learning_rate=1e-3,
   return model, history
 
 def lstm_scores(model, X, batch_size=8192):
-  """Fraud probability for each window (its newest transaction)."""
+  """
+  Fraud probability for each window (its newest transaction).
+  """
   model.eval()
   device = next(model.parameters()).device
   out = []
