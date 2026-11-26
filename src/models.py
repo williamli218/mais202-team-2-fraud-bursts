@@ -14,6 +14,7 @@ from sklearn.preprocessing import StandardScaler
 import config
 import json
 
+from src import data, features
 import torch
 from torch import nn
 import copy
@@ -67,6 +68,42 @@ def smooth_scores(scores, card_ids, k=3):
   ).to_numpy()
   
 
+def make_lstm_windows(df, n=10):
+  """
+  One window per transaction: the card's last n transactions (oldest first,
+  padded at the start) with the LSTM's 17 inputs. Returns (X, y, meta).
+  """
+  df_f = df.join(features.build_lstm_inputs(df))
+  return data.make_sequences(df_f, n=n, feature_cols=features.LSTM_COLS)
+
+
+def scale_windows(X, meta, mean, std):
+  """
+  Standardise X in place with the given (training) mean/std, then set the
+  padded steps back to 0. Returns X.
+  """
+  X -= mean
+  X /= std
+  n_valid = meta["n_valid"].to_numpy()
+  pad = np.arange(X.shape[1])[None, :] < (X.shape[1] - n_valid)[:, None]
+  X[pad] = 0.0
+  return X
+
+
+def prepare_lstm_data(pool, train, valid, n=10):
+  """
+  Windows for the pool, scaled with statistics from training windows only,
+  split into train and validation. Returns a dict with X_tr, y_tr, X_va, y_va,
+  meta_va, mean and std (save mean/std with the model: predict() needs them).
+  """
+  X, y, meta = make_lstm_windows(pool, n)
+  is_tr = meta.index.isin(train.index)
+  is_va = meta.index.isin(valid.index)
+  mean = X[is_tr, -1, :].mean(axis=0)
+  std = X[is_tr, -1, :].std(axis=0) + 1e-6
+  X = scale_windows(X, meta, mean, std)
+  return {"X_tr": X[is_tr], "y_tr": y[is_tr], "X_va": X[is_va], "y_va": y[is_va],
+          "meta_va": meta[is_va], "mean": mean, "std": std}
 
 class FraudLSTM(nn.Module):
   """
