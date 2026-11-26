@@ -93,8 +93,8 @@ def scale_windows(X, meta, mean, std):
 def prepare_lstm_data(pool, train, valid, n=10):
   """
   Windows for the pool, scaled with statistics from training windows only,
-  split into train and validation. Returns a dict with X_tr, y_tr, X_va, y_va,
-  meta_va, mean and std (save mean/std with the model: predict() needs them).
+  split into train and validation. Returns a dict with X_tr, y_tr, meta_tr,
+  X_va, y_va, meta_va, mean and std (save mean/std with the model: predict() needs them).
   """
   X, y, meta = make_lstm_windows(pool, n)
   is_tr = meta.index.isin(train.index)
@@ -102,8 +102,9 @@ def prepare_lstm_data(pool, train, valid, n=10):
   mean = X[is_tr, -1, :].mean(axis=0)
   std = X[is_tr, -1, :].std(axis=0) + 1e-6
   X = scale_windows(X, meta, mean, std)
-  return {"X_tr": X[is_tr], "y_tr": y[is_tr], "X_va": X[is_va], "y_va": y[is_va],
-          "meta_va": meta[is_va], "mean": mean, "std": std}
+  return {"X_tr": X[is_tr], "y_tr": y[is_tr], "meta_tr": meta[is_tr],
+          "X_va": X[is_va], "y_va": y[is_va], "meta_va": meta[is_va],
+          "mean": mean, "std": std}
 
 class FraudLSTM(nn.Module):
   """
