@@ -109,7 +109,9 @@ def validate_output(track: int, out) -> dict:
 
 
 def load_model():
-  """Load the trained LSTM, its input settings and the hold threshold from models/."""
+  """
+  Load the trained LSTM, its input settings and the hold threshold from models/.
+  """
   folder = config.ROOT / "models"
   with open(folder / "lstm_n10.json") as f:
     settings = json.load(f)
@@ -134,8 +136,10 @@ def load_model():
 _MODEL = None
 
 def _reasons(x, f):
-  """Short, plain-language flags about the newest transaction, most important first.
-  They describe what the window looks like; they are not the LSTM's internals."""
+  """
+  Short, plain-language flags about the newest transaction, most important first.
+  They describe what the window looks like; they are not the LSTM's internals.
+  """
   reasons = []
   t = pd.to_datetime(x["trans_date_trans_time"])
   last_amt = float(x["amt"].iloc[-1])
@@ -155,9 +159,12 @@ def _reasons(x, f):
     reasons.append(f"online purchase ({cat})")
   return reasons
 
+
 def _window_scores(f, model):
-  """LSTM score for every transaction in f, each from its own window of the
-  previous n transactions (scaled, padded at the start), like make_sequences."""
+  """
+  LSTM score for every transaction in f, each from its own window of the
+  previous n transactions (scaled, padded at the start), like make_sequences.
+  """
   rows = (f[model["features"]].to_numpy(dtype="float32") - model["mean"]) / model["std"]
   n, k = model["n"], len(rows)
   windows = np.zeros((k, n, rows.shape[1]), dtype="float32")
@@ -167,8 +174,10 @@ def _window_scores(f, model):
   with torch.no_grad():
     return torch.sigmoid(model["lstm"](torch.from_numpy(windows))).numpy()
 
+
 def predict(x, model=None) -> dict:
-    """Score one input and turn the score into a decision. See the module
+    """
+    Score one input and turn the score into a decision. See the module
     docstring for the contract.
 
     model: pass an object to use instead of load_model(). Handy for tests.
@@ -185,16 +194,10 @@ def predict(x, model=None) -> dict:
     if track == 6:
         host = data.extract_hostname(x)  # the model sees this, not the URL; return it as "host"
 
-    # TODO D2.6: build the features for x (src/features.py), score them with
-    # model, turn the score into a decision with your thresholds
-    # (src/decision.py), fill in reasons, and return the dict. Run it through
-    # validate_output(track, out) before returning.
-    # same per-transaction columns the LSTM was trained on
     f = features.build_lstm_inputs(x)
     scores = _window_scores(f, model)          # one score per transaction, oldest first
     score = float(scores[-1])                  # the newest transaction's score
 
-    # replay the decision layer: a score >= threshold holds the card for hold_hours
     decisions = simulate_holds(scores, x["cc_num"], x["trans_date_trans_time"],
                                model["threshold"], model["hold_hours"])
     decision = str(decisions[-1])
