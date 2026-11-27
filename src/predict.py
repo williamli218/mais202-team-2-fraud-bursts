@@ -145,9 +145,10 @@ def _reasons(x, f):
   last_amt = float(x["amt"].iloc[-1])
   prev = x["amt"].iloc[:-1].astype(float)
 
-  n_24h = int((t >= t.iloc[-1] - pd.Timedelta(hours=24)).sum())
-  if n_24h >= 4:
-    reasons.append(f"{n_24h} charges in the last 24 hours")
+  last_24h = t >= t.iloc[-1] - pd.Timedelta(hours=24)
+  spend_24h = float(x.loc[last_24h.to_numpy(), "amt"].astype(float).sum())
+  if spend_24h >= 1000:
+    reasons.append(f"${spend_24h:,.0f} spent in the last 24 hours ({int(last_24h.sum())} charges)")
   if len(prev) and last_amt > 3 * prev.mean():
     reasons.append(f"${last_amt:.0f} is over 3x this card's recent average")
   if f["log_seconds_since_prev"].iloc[-1] < np.log1p(10 * 60):
@@ -157,6 +158,10 @@ def _reasons(x, f):
   cat = str(x["category"].iloc[-1])
   if cat.endswith("_net"):
     reasons.append(f"online purchase ({cat})")
+  HIGH_RISK = {"shopping_net", "misc_net", "grocery_pos"}
+  cat = str(x["category"].iloc[-1])
+  if cat in HIGH_RISK:
+    reasons.append(f"high-risk category ({cat})")
   return reasons
 
 
