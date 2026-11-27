@@ -26,7 +26,16 @@ from src.predict import predict, validate_input, validate_output
 TRACK = config.require_track()
 NAME = config.TRACK_NAMES[TRACK]
 FIXTURES = config.ROOT / "tests" / "fixtures"
+TITLE = "Track 2: Catching fraud bursts as they happen"
 
+EXAMPLES = [
+    ("Attack caught: this charge triggers a hold", "examples/attack_caught.csv"),
+    ("Still on hold: 72 h after an earlier fraud", "examples/still_on_hold.csv"),
+    ("Normal card: allowed", "examples/normal_card.csv"),
+]
+
+EXAMPLE_TEXT = {label: (config.ROOT / path).read_text() for label, path in EXAMPLES
+                if (config.ROOT / path).exists()}
 
 # ---------------------------------------------------------------------------
 # The placeholder, used until predict() is implemented
@@ -57,6 +66,8 @@ def score(x) -> tuple[dict, bool]:
 def example_input() -> str:
     """A valid example for the input box, taken from the fixtures."""
     if TRACK in (1, 2):
+        if EXAMPLE_TEXT:
+            return next(iter(EXAMPLE_TEXT.values()))
         pool, _ = data.load_track01(data_dir=FIXTURES)
         card = pool["cc_num"].iloc[0]
         rows = pool[pool["cc_num"] == card].sort_values("unix_time").head(5)
@@ -103,6 +114,18 @@ def parse_input(text: str):
         return int(text)
     raise ValueError(TRACK)
 
+def to_table(text: str) -> pd.DataFrame:
+    """The input as a readable table for the demo: when, where, what, how much."""
+    try:
+        df = parse_input(text)
+    except Exception:
+        return pd.DataFrame({"note": ["Input isn't valid CSV yet."]})
+    cols = [c for c in ["trans_date_trans_time", "merchant", "category", "amt"] if c in df.columns]
+    out = df[cols].rename(columns={"trans_date_trans_time": "time", "amt": "amount ($)"})
+    if "merchant" in out:
+        out["merchant"] = out["merchant"].str.replace("^fraud_", "", regex=True)   # Sparkov prefix, not a label
+    return out
+
 
 INPUT_HELP = {
     1: "One card's recent transactions as CSV with a header row, oldest first.",
@@ -133,20 +156,31 @@ def run(text: str):
     return out["decision"], float(out["score"]), reasons, extra, status
 
 
-with gr.Blocks(title=f"Track {TRACK}: {NAME}") as demo:
-    gr.Markdown(f"# Track {TRACK}: {NAME}\n\n{INPUT_HELP[TRACK]} Decisions: "
-                + ", ".join(f"`{d}`" for d in DECISIONS[TRACK]) + ".")
+with gr.Blocks(title=TITLE) as demo:
+    gr.Markdown(f"# {TITLE}\n\n{INPUT_HELP[TRACK]} Decisions: "
+                + ", ".join(f"`{d}`" for d in DECISIONS[TRACK])
+                + ". A card is held for 72 hours once a charge scores at or above the threshold.")
+
+    with gr.Tabs():
+        with gr.Tab("Table"):
+            table = gr.Dataframe(value=to_table(example_input()), interactive=False, wrap=True)
+        with gr.Tab("Raw input (CSV)"):
+            box = gr.Textbox(label="Input", value=example_input(), lines=12)
+
     with gr.Row():
-        with gr.Column():
-            box = gr.Textbox(label="Input", value=example_input(), lines=8 if TRACK in (1, 2, 3, 4, 7) else 1)
-            button = gr.Button("Score", variant="primary")
-        with gr.Column():
-            decision = gr.Textbox(label="Decision", interactive=False)
-            score_out = gr.Number(label="Score", interactive=False)
-            reasons = gr.Markdown(label="Reasons")
-            extra = gr.Textbox(label="Other fields", interactive=False)
-            status = gr.Markdown()
+        for label, text in EXAMPLE_TEXT.items():
+            gr.Button(label, size="sm").click(lambda t=text: t, outputs=box)
+        button = gr.Button("Score", variant="primary")
+
+    with gr.Row():
+        decision = gr.Textbox(label="Decision", interactive=False)
+        score_out = gr.Number(label="Score", interactive=False)
+        extra = gr.Textbox(label="Other fields", interactive=False)
+    reasons = gr.Markdown(label="Reasons")
+    status = gr.Markdown()
+
     button.click(run, inputs=box, outputs=[decision, score_out, reasons, extra, status])
+    box.change(to_table, inputs=box, outputs=table)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,13 @@
+trans_date_trans_time,cc_num,merchant,category,amt,unix_time
+2019-12-29 01:47:37,30181367542315,"fraud_Altenwerth, Cartwright and Koss",shopping_net,1.19,1356745657
+2019-12-29 09:04:47,30181367542315,"fraud_Labadie, Treutel and Bode",shopping_net,60.27,1356771887
+2019-12-30 03:59:04,30181367542315,fraud_Berge LLC,gas_transport,51.01,1356839944
+2019-12-30 09:49:38,30181367542315,"fraud_Turner, Ruecker and Parisian",misc_pos,7.66,1356860978
+2019-12-30 15:00:52,30181367542315,fraud_Kirlin and Sons,personal_care,25.67,1356879652
+2019-12-30 19:26:23,30181367542315,"fraud_Dare, Fritsch and Zboncak",health_fitness,21.0,1356895583
+2019-12-31 22:11:08,30181367542315,"fraud_Tillman, Fritsch and Schmitt",misc_net,808.97,1356991868
+2019-12-31 22:15:17,30181367542315,"fraud_Little, Gutmann and Lynch",shopping_net,977.42,1356992117
+2019-12-31 22:17:45,30181367542315,"fraud_Romaguera, Cruickshank and Greenholt",shopping_net,940.77,1356992265
+2020-01-01 03:56:59,30181367542315,fraud_Vandervort-Funk,grocery_pos,291.24,1357012619
+2020-01-02 07:05:34,30181367542315,"fraud_Ruecker, Beer and Collier",shopping_net,35.83,1357110334
+2020-01-03 05:51:01,30181367542315,fraud_Huels-Nolan,gas_transport,55.37,1357192261
