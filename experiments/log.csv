@@ -28,3 +28,6 @@ date,author,model,settings,split,metric,value,notes
 2026-11-26,William Li,decision_layer_d3,"threshold 0.9991763234138489, hold 72h",test,honest cards held,12,"D3 test, run once"
 2026-11-26,William Li,decision_layer_d3,"threshold 0.9991763234138489, hold 72h",test,fraud charges through,577,"D3 test, run once"
 2026-11-26,William Li,decision_layer_d3,"threshold 0.9991763234138489, hold 72h",test,total cost $,224923,"D3 test, run once"
+2026-11-27,William Li,lstm,"n=10, hidden=32, same settings",valid,median_frauds_before_hold,2.0,"window sweep, validation only"
+2026-11-27,William Li,lstm,"n=5, hidden=32, same settings",valid,median_frauds_before_hold,2.0,"window sweep, validation only"
+2026-11-27,William Li,lstm,"n=20, hidden=32, same settings",valid,median_frauds_before_hold,2.0,"window sweep, validation only"
