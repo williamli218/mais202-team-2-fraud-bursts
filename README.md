@@ -54,7 +54,7 @@ Every run is logged in [`experiments/log.csv`](experiments/log.csv).
 
 ### 2. Run the pipeline
 
-1. Open [`notebooks/reproduce.ipynb`](notebooks/reproduce.ipynb) in Colab
+1. Open [`notebooks/workflow.ipynb`](notebooks/workflow.ipynb) in Colab
    (File → Open notebook → GitHub tab → this repository).
 2. Switch to a GPU: **Runtime → Change runtime type → T4 GPU** (the LSTM trains in about 3 minutes).
 3. **Run all cells, top to bottom, once.** The notebook:
